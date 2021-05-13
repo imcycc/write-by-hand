@@ -4,18 +4,45 @@ class Scanner {
   constructor(string) {
     this.string = string
     this.tail = string
-    this.pos = 0
   }
 
-  // 返回匹配文本，指针移动到匹配文本之后，（匹配文本必须在开头）
-  scan(re) {
-
+  eos() {
+    return this.tail === ''
   }
 
-  // 返回匹配文本之前的文本，指针移动到匹配文本之前
-  scanUtil(re) {
+  // 返回匹配值（匹配值必须在开头）
+  scan (re) {
+    let match = this.tail.match(re)
 
+    if (!match || match.index !== 0) {
+      return ''
+    }
+
+    let string = match[0]
+    this.tail = this.tail.substring(string.length)
+
+    return match[0]
+  }
+
+  // 返回匹配值之前的值
+  scanUtil (re) {
+    let index = this.tail.search(re), match
+
+    switch (index) {
+      case -1:
+        match = this.tail
+        this.tail = ''
+        break;
+      case 0:
+        match = ''
+        break;
+      default:
+        match = this.tail.substring(0, index)
+        this.tail = this.tail.substring(index)
+    }
+
+    return match
   }
 }
 
-export default new Scanner()
+export default Scanner

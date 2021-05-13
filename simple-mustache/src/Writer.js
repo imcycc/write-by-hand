@@ -12,8 +12,6 @@ class Writer {
 
   render(template, view) {
     var tokens = this.parse(template)
-
-    console.log(tokens)
   }
 
   renderTokens() {

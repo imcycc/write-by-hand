@@ -37,5 +37,6 @@ const data = {
 // var html = writer.renderTokens(tokens, data)
 
 // console.log(html)
+var str = '啊哈哈{{ab}}呵呵{{cd}}啦啦'
+writer.render(template, { bb: '11' })
 
-writer.render('啊哈哈{{ab}}呵呵{{cd}}啦啦', { bb: '11' })

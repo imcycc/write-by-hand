@@ -1,3 +1,4 @@
+import Scanner from './Scanner'
 import nestTokens from './nestTokens'
 
 /**
@@ -6,9 +7,30 @@ import nestTokens from './nestTokens'
  * @returns 
  */
 export default function parseTemplate (template) {
+  const openingTagRe = /\{\{\s*/
+  const closingTagRe = /\s*\}\}/
   let tokens = []
 
-  console.log(template)
+  const scanner = new Scanner(template)
 
+  let text, name
+  while (!scanner.eos()) {
+    text = scanner.scanUtil(openingTagRe)
+    if (text) {
+      tokens.push(['text', text])
+    }
+
+    if (!scanner.scan(openingTagRe)) {
+      break
+    }
+
+    name = scanner.scanUtil(closingTagRe)
+    if (name) {
+      tokens.push(['name', name])
+    }
+
+    scanner.scan(closingTagRe)
+  }
+  console.log(tokens)
   return nestTokens(tokens)
 }
