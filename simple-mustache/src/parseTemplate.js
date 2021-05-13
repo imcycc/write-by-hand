@@ -6,31 +6,38 @@ import nestTokens from './nestTokens'
  * @param {*} template 
  * @returns 
  */
-export default function parseTemplate (template) {
+export default function parseTemplate(template) {
   const openingTagRe = /\{\{\s*/
   const closingTagRe = /\s*\}\}/
+  const tagRe = /#|\//
   let tokens = []
 
   const scanner = new Scanner(template)
 
-  let text, name
+  let value, type
   while (!scanner.eos()) {
-    text = scanner.scanUtil(openingTagRe)
-    if (text) {
-      tokens.push(['text', text])
+    // 获取 text
+    value = scanner.scanUtil(openingTagRe)
+    if (value) {
+      tokens.push(['text', value])
     }
 
+    // 跳过开始符号，没有找到开始符号则跳过当前循环
     if (!scanner.scan(openingTagRe)) {
       break
     }
 
-    name = scanner.scanUtil(closingTagRe)
-    if (name) {
-      tokens.push(['name', name])
+    // 获取类型 # / name
+    type = scanner.scan(tagRe) || 'name';
+    // 获取 name
+    value = scanner.scanUtil(closingTagRe)
+    if (value) {
+      tokens.push([type, value])
     }
 
+    // 跳过结束符号
     scanner.scan(closingTagRe)
   }
-  console.log(tokens)
+
   return nestTokens(tokens)
 }
