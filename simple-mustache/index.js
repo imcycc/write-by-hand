@@ -1,6 +1,5 @@
-import writer from './src/Writer'
 import Mustache from 'mustache'
-import parseTemplate from './src/parseTemplate'
+import render from './src/render'
 
 const template = `
 <div>
@@ -15,17 +14,16 @@ const template = `
   {{/list}}
 </div>
 `
-
-const data = {
+const view = {
   dataName: '啊哈哈',
   list: [{
-    key: '1',
+    key: 'key1',
     values: [
       { aa: '1111' },
       { aa: '1222' },
     ]
   }, {
-    key: '2',
+    key: 'key2',
     values: [
       { aa: '2111' },
       { aa: '2222' },
@@ -34,21 +32,21 @@ const data = {
 }
 
 
-// var str = '啊哈哈{{ab}}呵呵{{cd}}啦啦'
-// writer.render(template, { bb: '11' })
+const template1 = "我叫{{name}}，今年{{age}}岁。"
+const view1 = {
+  name: "王大锤",
+  age: 18,
+}
 
 
-var t = `
+var template2 = `
   <div>
     {{#stooges}}
     <b>{{name}}</b>
     {{/stooges}}
   </div>
 `
-console.log(JSON.stringify(writer.render(t)))
-
-
-var v = {
+var view2 = {
   "stooges": [
     { "name": "Moe" },
     { "name": "Larry" },
@@ -56,19 +54,15 @@ var v = {
   ]
 }
 
-var cc = [
-  ["text", "\n  <div>\n    "],
-  ["name", "#stooges"],
-  ["text", "\n    <b>"],
-  ["name", "name"],
-  ["text", "</b>\n    "],
-  ["name", "/stooges"],
-  ["text", "\n  </div>\n"]
-]
 
 
 
-// var vv = Mustache.parse("我叫{{name}}，今年{{age}}岁。")
-// console.log(JSON.stringify(vv))
+// const htmlStr = render(template, view)
+// console.log(htmlStr)
 
 
+const htmlStr = render(template1, view1)
+console.log(htmlStr)
+
+// const htmlStr = render(template2, view2)
+// console.log(htmlStr)

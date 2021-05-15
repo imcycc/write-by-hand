@@ -1,25 +1,25 @@
 # 实现一个简易版的 mustache 模板引擎
 
-[github官网地址](https://github.com/janl/mustache.js)
+官网地址: [github: mustache](https://github.com/janl/mustache.js)
 
-mustache 是模版语法的开山鼻祖。本文将讲解 mustache 实现原理，和手写基础语法和循环语法。
+mustache 是模版语法的开山鼻祖。本文将讲解 mustache 实现原理，和手写一个简易版的 mustache。
 
-普通语法：
+**注意**：mustache 源码中用 view 表示需要渲染的数据，本文也用 view 来表示。
+
+先来看下 mustache 的模板语法和循环语法，下文也主要实现这两种基础语法。
 
 ```js
+// ----------------模板语法----------------
 const template = "我叫{{name}}，今年{{age}}岁。"
 const view = {
   name: "王大锤",
   age: 18,
 }
-
 const output = Mustache.render(template, view)
 // "我叫王大锤，今年18岁"
-```
 
-循环语法：
 
-```js
+// ----------------循环语法----------------
 const template = `
   <div>
     {{#stooges}}
@@ -34,7 +34,6 @@ const view = {
     { "name": "Curly" }
   ]
 }
-
 const output = Mustache.render(template, view)
 // `
 //   <div>
@@ -47,22 +46,22 @@ const output = Mustache.render(template, view)
 
 由上面两个例子可以看出，mustache 专注与 将模板字符串和数据渲染为静态 html。
 
-原理是将模板字符串通过标识符分割，转换成嵌套树结构，其层级和数据层级相似，然后组合生成字符串。
+原理是：将模板字符串通过标识符分割，转换成嵌套树结构，其层级和数据层级相同，然后组合生成字符串。
 
 ## 实现
 
-mustache api 实现了很多用法，我们挑选其中最经典的几个语法进行实现。
+实现的代码地址：[github: simple-mustache](https://github.com/imcycc/write-by-hand/tree/main/simple-mustache)
+
+mustache api 实现了很多用法，我们挑选其中最经典的两个语法进行实现。
 
 * <code>{{a}}</code> 双括号插值语法
 * <code># /</code> 循环符号
-* <code>.</code> 数组中当前项符号
-* <code>a.b.c</code> 语法
 
 实现的步骤主要分为 3 大块：
 
 1. 将模板转为 tokens
 2. 将 tokens 转为嵌套树结构的 tokens
-3. tokens + 数据 生成 htmlStr
+3. tokens + view 生成 htmlStr
 
 首先来看一下什么叫 tokens
 
@@ -70,20 +69,14 @@ mustache api 实现了很多用法，我们挑选其中最经典的几个语法�
 
 tokens 是模板字符串解析后的嵌套树结构数据。
 
-token 的第一项为类型，我们要实现的类型有：
+#### 模板字符串和 tokens 解析前后对比
 
-* text：文本
-* name：变量
-* <code>#</code> 循环开始符号
-* <code>/</code> 循环结束符号
-* <code>.</code> 数组当前项
-
-普通语法和循环语法解析前后如下：
+先来看下模板语法和循环语法解析前后如下：
 
 ```js
-// 解析前
+// 解析前 模板字符串
 "我叫{{name}}，今年{{age}}岁。"
-// 解析后
+// 解析后 tokens
 [
   ["text", "我叫", 0, 2],
   ["name", "name", 2, 10],
@@ -93,7 +86,7 @@ token 的第一项为类型，我们要实现的类型有：
 ]
 
 
-// 解析前
+// 解析前 模板字符串
 `
   <div>
     {{#stooges}}
@@ -101,7 +94,7 @@ token 的第一项为类型，我们要实现的类型有：
     {{/stooges}}
   </div>
 `
-// 解析后（实际会有空格和换行符，此处先忽略）
+// 解析后 tokens
 [
   ["text", "\n  <div>\n", 0, 9],
   ["#", "stooges", 13, 25, [
@@ -113,19 +106,36 @@ token 的第一项为类型，我们要实现的类型有：
 ]
 ```
 
-模板会被 {{ 和 }} 拆分为多维数组，循环语句会被嵌套进下一维。
+**注意**：源码中 token 下标 2 和 3 代表当前 token 在原始模板中的开始位置和结束位置，仅仅表示了位置，我们简易版不实现。
 
-**注意**：解析后的数组中的数字是记录当前字符串的开始位置和结束位置，并没有实际用途，下面不做实现。
+我们要实现的 token 的结构为 <code>['类型', '文本或变量名称', '循环体 children 数组']</code>。
 
-实现模板分割，源码中实现了 Scanner 类。
+#### token 的第一个位置：类型
+
+源码中 token 类型有很多，我们只实现四种类型：
+
+* text：文本
+* name：变量
+* <code>#</code> 循环开始符号
+* <code>/</code> 循环结束符号（这个符号在单层 tokens 会出现，后面讲）
+
+#### token 的第二个位置：值
+
+如果类型是 text ，值为文本；如果类型是 name 、 # 、 / ，值为变量名。
+
+#### token 的第三个位置：children
+
+如果类型是 # ，children 为循环体，也可以看做是下一层的 tokens。
+
+模板分割为 tokens ，是通过标识符 {{ 和 }} 分割后组合。实现模板分割，源码中实现了 Scanner 类。
 
 ### Scanner 扫描器
 
-普通模板语法我们可以通过字符串的 replace 方法 加 正则匹配替换，实现变量替换，但是 # / 这种循环语法就无能为力了。
+如果是普通模板语法我们可以通过字符串的 replace 方法 加 正则匹配替换，但是 # / 这种循环语法正则替换就无能为力了。
 
 mustache 源码封装了 Scanner 类来优雅的分割模板。
 
-Scanner 类有两个属性和3个方法。
+我们要实现的 Scanner 类有2个属性和3个方法。（源码中 Scanner 类还有属性 pos 是记录字符串的位置，下面不做实现。）
 
 属性：
 
@@ -137,8 +147,6 @@ Scanner 类有两个属性和3个方法。
 * eos 判断是否结束
 * scan 返回匹配到的字符串，设置剩余字符串为匹配到的字符串的下一个位置到结束
 * scanUtil 返回匹配到字符串之前的字符串，设置剩余字符串为匹配到字符串前一个位置到结束
-
-**注意**：源码中 Scanner 类的属性 pos 是记录字符串的位置，下面不做实现。
 
 循环穿插调用 scan 和 scanUtil 可完成扫描字符串。（后面讲）
 
@@ -197,6 +205,8 @@ class Scanner {
 1. 将模板字符串转化为单层 tokens
 2. 将单层 tokens 处理成 嵌套树结构
 
+函数结构如下：
+
 ```js
 parseTemplate (template) {
   // 此处 tokens 为单层
@@ -204,25 +214,31 @@ parseTemplate (template) {
 
   // ...
 
-  // nestTokens 将 tokens 处理成 嵌套树结构
+  // nestTokens 将单层 tokens 处理成 嵌套树结构
   return nestTokens(tokens)
 }
 ```
 
 #### parseTemplate 方法
 
-parseTemplate 方法调用 Scanner 分割字符串，这里会传入两个正则：
+parseTemplate 方法调用 Scanner 分割字符串，这里会传入3个正则：
 
-* /\{\{\s*/ 开始符号
-* /\s*\}\}/ 结束符号
+* <code>/\{\{\s*/</code> 开始符号
+* <code>/\s*\}\}/</code> 结束符号
+* <code>/#|\//</code> 类型符号
 
-源码思路清晰，每一次 while 循环，先调用 scanUtil 获取 text，然后 scan 跳过开始符号，再调用 scanUtil 获取 name，最后调用 scan 跳过结束符号。
+源码思路清晰，每一次 while 循环，执行4个步骤：
 
-类型也通过 scan 获取。
+1. 调用 scanUtil 获取文本
+2. 调用 scan 跳过开始符号（如果没有，跳过本次循环）
+3. 调用 scanUtil 获取变量名
+4. 调用 scan 跳过结束符号
+
+当然获取变量名时，也通过 scan 获取了类型。
 
 巧妙的使用 scanUtil 和 scan 两个方法和两个正则就完成了单层 tokens。
 
-简化实现如下：
+实现如下：
 
 ```js
 /**
@@ -230,7 +246,7 @@ parseTemplate 方法调用 Scanner 分割字符串，这里会传入两个正则
  * @param {*} template 
  * @returns 
  */
-export default function parseTemplate(template) {
+function parseTemplate(template) {
   const openingTagRe = /\{\{\s*/
   const closingTagRe = /\s*\}\}/
   const tagRe = /#|\//
@@ -285,7 +301,7 @@ export default function parseTemplate(template) {
 
 #### nestTokens 方法
 
-nestTokens 方法将 单层 tokens 转换为 嵌套树结构。精髓在于运用了栈结构记录层级，用对象引用类型的特性记录当前操作项。
+nestTokens 方法将 单层 tokens 转换为 嵌套树结构。精髓在于运用了栈结构记录层级，用对象引用类型的特性记录当前操作项。此方法也是最不容易理解的一部分。代码如下：
 
 ```js
 /**
@@ -293,7 +309,7 @@ nestTokens 方法将 单层 tokens 转换为 嵌套树结构。精髓在于运�
  * @param {*} tokens 
  * @returns 
  */
-export default function nestTokens(tokens) {
+function nestTokens(tokens) {
   let nestedTokens = []
   let collector = nestedTokens  // 当前层级
   let sections = []  // 栈模型，记录当前遍利层级
@@ -303,11 +319,11 @@ export default function nestTokens(tokens) {
       case '#':
         collector.push(token)
         sections.push[token]  // 入栈
-        collector = token[2] = []  // 移动指针到栈顶
+        collector = token[2] = []  // 当前层级 指向 栈顶
         break;
       case '/':
         sections.pop()  // 出栈
-        collector = sections.length ? sections[sections.length -1][2] : nestedTokens  // 移动当指针到栈顶 空栈则指向 nestedTokens
+        collector = sections.length ? sections[sections.length -1][2] : nestedTokens  // 当前层级 指向 栈顶，空栈则指向 nestedTokens
         break;
       default:
         collector.push(token)
@@ -335,8 +351,80 @@ export default function nestTokens(tokens) {
 
 tokens 处理完成！
 
-### tokens + 数据
+### tokens + view 生成 htmlStr
 
-#### a.b.c
+上一步 tokens 生成好了，接下来写一个 renderTokens 函数，传入 tokens 和 view，返回最终结果 htmlStr。
 
-#### .
+备注：源码中用 Writer 构造函数处理这一个步骤，里面有很多变量和方法，实现了缓存等功能，咱这是简易版，不考虑缓存，一个函数搞定。
+
+#### renderTokens 方法
+
+renderTokens 循环遍历了 tokens，根据 token 类型拼接不同的值，如果是 # 就循环遍历下一层。这个方法也比较好理解，代码如下：
+
+```js
+function renderTokens (tokens, view) {
+  let buffer = ''
+
+  tokens.forEach(token => {
+    const type = token[0]
+    const value = token[1]
+
+    if (type === 'text') {
+      buffer += value
+    } else if (type === 'name') {
+      buffer += view[value]
+    } else if (type === '#') {
+      const subTokens = token[2]
+      const subViews = view[value]
+      subViews.forEach(subView => {
+        buffer += renderTokens(subTokens, subView)
+      })
+    }
+
+  })
+
+  return buffer
+}
+```
+
+用文章开头的循环结构数据测试一下：
+
+```js
+const tokens = parseTemplate(template)
+const htmlStr = renderTokens(tokens, view)
+console.log(htmlStr)
+// `
+//   <div>
+//
+//     <b>Moe</b>
+//
+//     <b>Larry</b>
+//
+//     <b>Curly</b>
+//
+//   </div>
+// `
+```
+
+输出正确，中间有很丑的空格和换行符，没啥影响，就不处理了。
+
+获取 htmlStr 得调用两个方法，不方便，写个 render 函数整合起来。
+
+#### render 方法
+
+```js
+function render(template, view) {
+  const tokens = parseTemplate(template)
+  return renderTokens(tokens, view)
+}
+```
+
+调用：
+
+```js
+const htmlStr = render(template, view)
+console.log(htmlStr)
+```
+
+搞定。到这里，mustache 基础功能已经实现好了。
+
