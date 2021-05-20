@@ -18,6 +18,8 @@
 // obj.a++;
 // console.log(obj.a)
 
+import observe from './observe'
+
 /**
  * 定义响应式数据，封装 defineProperty
  * @param {*} data 
@@ -28,6 +30,9 @@ export default function defineReactive(data, key, val) {
   if (arguments.length === 2) {
     val = data[key]
   }
+
+  let childOb = observe(val)
+
   Object.defineProperty(data, key, {
     // 可枚举
     enumerable: true,
@@ -35,14 +40,17 @@ export default function defineReactive(data, key, val) {
     configurable: true,
     // getter
     get() {
-      return newValue
+      console.log('getter', key, val)
+      return val
     },
     // setter
     set(newValue) {
+      console.log('setter', key, newValue)
       if (val === newValue) {
         return
       }
       val = newValue
+      childOb = observe(newValue)
     }
   })
 }
