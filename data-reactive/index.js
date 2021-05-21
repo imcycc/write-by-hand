@@ -1,34 +1,22 @@
-import defineReactive from './src/defineReactive'
-import Observer from './src/Observer'
+import observer from './src/observe'
 
 var obj = {
   a: {
-    b: {}
+    b: 10
   },
-  m: 20
+  arr: [
+    { id: 1, name: '111' },
+    { id: 2, name: '222' },
+    { id: 3, name: '333' },
+  ]
 }
 
-// defineReactive(obj)
-
-
-
-function observe(value) {
-  if (typeof value !== 'object') return
-
-  var ob
-  if (typeof value.__ob__ !== 'undefined') {
-    ob = value.__ob__
-  } else {
-    ob = new Observer(value)
-  }
-
-  return ob
-}
-
-
-observe(obj)
-
+observer(obj)
+obj.a.b = 20
 console.log(obj)
-obj.a.b.c = 20
-// obj.a.b.c.d = 40
+
+
+// 设置新属性
+obj.a.c = 30
 console.log(obj)
+

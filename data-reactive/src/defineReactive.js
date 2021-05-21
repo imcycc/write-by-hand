@@ -2,16 +2,16 @@
 // 答：getter setter 需要变量周转才能工作 例如下面 temp 变量
 
 // var obj = {};
-// var temp;
+// var aValue;
 // Object.defineProperty(obj, 'a', {
-//     // getter
-//     get() {
-//         return temp;
-//     },
-//     // setter
-//     set(newValue) {
-//         temp = newValue;
-//     }
+//   // getter
+//   get () {
+//     return aValue;
+//   },
+//   // setter
+//   set (newValue) {
+//     aValue = newValue;
+//   }
 // })
 // obj.a = 1;
 // console.log(obj.a)
@@ -26,12 +26,13 @@ import observe from './observe'
  * @param {*} key 
  * @param {*} val 
  */
-export default function defineReactive(data, key, val) {
+export default function defineReactive (data, key, val) {
   if (arguments.length === 2) {
     val = data[key]
   }
 
-  let childOb = observe(val)
+  // 把 val 变为响应式
+  observe(val)
 
   Object.defineProperty(data, key, {
     // 可枚举
@@ -39,18 +40,17 @@ export default function defineReactive(data, key, val) {
     // 可配置
     configurable: true,
     // getter
-    get() {
-      console.log('getter', key, val)
+    get () {
       return val
     },
     // setter
-    set(newValue) {
-      console.log('setter', key, newValue)
+    set (newValue) {
       if (val === newValue) {
         return
       }
       val = newValue
-      childOb = observe(newValue)
+      // 把新数据变为响应式
+      observe(newValue)
     }
   })
 }
