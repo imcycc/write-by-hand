@@ -86,7 +86,7 @@ function defineReactive (data, key, val) {
 
 __ob__ 是 Observer 构造函数的实例，可以标识对象是否被响应式处理过。
 
-### observe
+### observe 入口函数
 
 observe 是入口函数，只需要 observe(obj) ，obj 就变成了了响应式数据。
 
@@ -101,7 +101,7 @@ function observe (value) {
 ```
 
 
-### Observer
+### Observer 构造器
 
 Observer 构造器执行时候把实例指向了传入 value 的 __ob__ ，且 __ob__ 是不可枚举的。
 
@@ -147,7 +147,7 @@ function def (obj, key, value, enumerable) {
 }
 ```
 
-### defineReactive
+### defineReactive 调用 observe
 
 Observer 的 walk 调用了 defineReactive ，把每一个属性变为响应式，每一个属性值也调用 observe 函数，也就是把下一层也变为响应式，这就实现了整个对象的响应式。当然，新值 set 的时候也需要调用一下 observe 函数。
 
