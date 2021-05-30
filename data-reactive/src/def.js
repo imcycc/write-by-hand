@@ -2,7 +2,7 @@
 export default function def(obj, key, value, enumerable) {
   Object.defineProperty(obj, key, {
     value,
-    enumerable,
+    enumerable: !!enumerable,
     writable: true,
     configurable: true,
   })

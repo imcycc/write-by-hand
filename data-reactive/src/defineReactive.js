@@ -18,7 +18,8 @@
 // obj.a++;
 // console.log(obj.a)
 
-import observe from './observe'
+import Dep from './Dep';
+import observe from './observe';
 
 /**
  * 定义响应式数据，封装 defineProperty
@@ -26,13 +27,14 @@ import observe from './observe'
  * @param {*} key 
  * @param {*} val 
  */
-export default function defineReactive (data, key, val) {
+export default function defineReactive(data, key, val) {
+  const dep = new Dep();
   if (arguments.length === 2) {
-    val = data[key]
+    val = data[key];
   }
 
   // 把 val 变为响应式
-  observe(val)
+  let childOb = observe(val);
 
   Object.defineProperty(data, key, {
     // 可枚举
@@ -40,17 +42,25 @@ export default function defineReactive (data, key, val) {
     // 可配置
     configurable: true,
     // getter
-    get () {
-      return val
+    get() {
+      if (Dep.target) {
+        // 闭包中的 dep 添加依赖
+        dep.depend();
+        if (childOb) {
+          // data 对象中的 dep 添加依赖
+          childOb.dep.depend();
+        }
+      }
+      return val;
     },
     // setter
-    set (newValue) {
+    set(newValue) {
       if (val === newValue) {
-        return
+        return;
       }
-      val = newValue
+      val = newValue;
       // 把新数据变为响应式
-      observe(newValue)
+      childOb = observe(newValue);
     }
   })
 }
