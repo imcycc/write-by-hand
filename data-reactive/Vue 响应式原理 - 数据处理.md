@@ -4,6 +4,8 @@
 
 接下来，在本文中，我们将**介绍** Vue 如何追踪变化，以及**实现**响应式数据。
 
+[github](https://github.com/imcycc/write-by-hand/tree/main/data-reactive)
+
 ## 如何追踪变化
 
 当你把一个普通的 JavaScript 对象传入 Vue 实例作为 data 选项，Vue 将遍历此对象所有的 property，并使用 Object.defineProperty 把这些 property 全部转为 getter/setter。

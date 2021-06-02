@@ -44,10 +44,10 @@ export default function defineReactive(data, key, val) {
     // getter
     get() {
       if (Dep.target) {
-        // 闭包中的 dep 添加依赖
+        // 闭包中的 dep 添加依赖，收集 watcher
         dep.depend();
         if (childOb) {
-          // data 对象中的 dep 添加依赖
+          // data 对象中的 dep 添加依赖，收集 watcher
           childOb.dep.depend();
         }
       }
@@ -61,6 +61,8 @@ export default function defineReactive(data, key, val) {
       val = newValue;
       // 把新数据变为响应式
       childOb = observe(newValue);
+      // 通知 watcher
+      dep.notify();
     }
   })
 }
