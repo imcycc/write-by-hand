@@ -31,10 +31,14 @@ export default class Watcher {
       this.cleanupDep();
       Dep.target = undefined;
     }
+    return value;
   }
 
   // 此方法在 dep.depend 中调用，判断防止重复添加 watcher 。
-  // 为什么不在 dep.depend 中判断？因为 dep.depend 只能判断 watcher 是否重复，不能判断 watcher 是否不再使用。在 watcher 中 get 方法最后会调用 cleanupDep 清除不再使用的 watcher 。
+  // 为什么不在 dep.depend 中判断？
+  //   因为 dep.depend 只能判断 watcher 是否重复，不能判断 watcher 是否不再使用。
+  //   在 watcher 中 get 方法最后会调用 cleanupDep 清除不再使用的 watcher 。
+  // 清除的时机：例如 { a: { b: { c: 1 } } }  修改为   a = { b: { c: 2} }  ，老的 b c 的 watcher 需要清除。
   addDep(dep) {
     if (!this.newDepIds.has(dep.id)) {
       this.newDeps.push(dep);
@@ -74,7 +78,7 @@ export default class Watcher {
     if (value !== this.value) {
       const oldValue = this.value;
       this.value = value;
-      this.cb(value, oldValue);
+      this.cb.call(this.vm, value, oldValue);
     }
   }
 }
